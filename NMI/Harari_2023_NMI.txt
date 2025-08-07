@@ -1,0 +1,1415 @@
+Received: 21 January 2022     Revised: 13 September 2022      Accepted: 11 October 2022
+DOI: 10.1002/jrsm.1608
+
+
+RESEARCH ARTICLE
+
+
+
+
+Network meta-interpolation: Effect modification
+adjustment in network meta-analysis using
+subgroup analyses
+
+Ofir Harari 1  | Mohsen Soltanifar 1,2 | Joseph C. Cappelleri 3,4 |
+Andre Verhoek 5 | Mario Ouwens 6 | Caitlin Daly 1    | Bart Heeg 5
+
+1
+ Real World and Advanced Analytics,
+Cytel, Vancouver, British Columbia,                  Abstract
+Canada                                               Effect modification (EM) may cause bias in network meta-analysis (NMA).
+2
+ Biostatistics Division, University of               Existing population adjustment NMA methods use individual patient data to
+Toronto, Toronto, Ontario, Canada
+3
+                                                     adjust for EM but disregard available subgroup information from aggregated
+ Statistical Research and Data Science
+Center, Pfizer Inc, Groton,
+                                                     data in the evidence network. Additionally, these methods often rely on the
+Connecticut, USA                                     shared effect modification (SEM) assumption. In this paper, we propose Net-
+4
+ Statistics Department, University of                work Meta-Interpolation (NMI): a method using subgroup analyses to adjust
+Connecticut, Mansfield, Connecticut, USA
+                                                     for EM that does not assume SEM. NMI balances effect modifiers across stud-
+5
+ Real World and Advanced Analytics,
+                                                     ies by turning treatment effect (TE) estimates at the subgroup- and study level
+Cytel, Rotterdam, South Holland, The
+Netherlands                                          into TE and standard errors at EM values common to all studies. In an exten-
+6
+ Real World Science and Digital,                     sive simulation study, we simulate two evidence networks consisting of four
+AstraZeneca, Västergötland, Sweden                   treatments, and assess the impact of departure from the SEM assumption, vari-
+Correspondence                                       able EM correlation across trials, trial sample size and network size. NMI was
+Ofir Harari, Real World Analytics, Cytel             compared to standard NMA, network meta-regression (NMR) and Multilevel
+Canada, 802-777 West Broadway Street,
+                                                     NMR (ML-NMR) in terms of estimation accuracy and credible interval (CrI)
+Vancouver, BC V5Z 1 Canada.
+Email: ofir.harari@cytel.com                         coverage. In the base case non-SEM dataset, NMI achieved the highest estima-
+                                                     tion accuracy with root mean squared error (RMSE) of 0.228, followed by stan-
+Funding information
+                                                     dard NMA (0.241), ML-NMR (0.447) and NMR (0.541). In the SEM dataset,
+Cytel Inc
+                                                     NMI was again the most accurate method with RMSE of 0.222, followed by
+                                                     ML-NMR (0.255). CrI coverage followed a similar pattern. NMI's dominance
+                                                     in terms of estimation accuracy and CrI coverage appeared to be consistent
+                                                     across all scenarios. NMI represents an effective option for NMA in the pres-
+                                                     ence of study imbalance and available subgroup data.
+
+                                                     KEYWORDS
+                                                     best linear unbiased predictor, effect modification, imputation, network meta interpolation,
+                                                     network meta-analysis, unique minimum Euclidean norm solution
+
+
+
+
+This is an open access article under the terms of the Creative Commons Attribution-NonCommercial License, which permits use, distribution and reproduction in any
+medium, provided the original work is properly cited and is not used for commercial purposes.
+© 2022 The Authors. Research Synthesis Methods published by John Wiley & Sons Ltd.
+
+Res Syn Meth. 2023;14:211–233.                                                                                         wileyonlinelibrary.com/journal/jrsm          211
+                                                                                                                                   17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+212                                                                                                                HARARI ET AL.
+
+
+
+                                          Highlights
+                                          • Existing methods addressing effect modification in indirect treatment com-
+                                            parison typically assume shared effect modification: an assumption that can-
+                                            not be verified and may lead to strong estimation bias if misplaced.
+                                          • Taking advantage of often readily available subgroup analyses could prove
+                                            invaluable in the attempt to balance the various studies in an evidence net-
+                                            work in the presence of non-shared effect modification, as detailed in this
+                                            manuscript.
+                                          • The implications of the improved accuracy of estimation and inference in
+                                            applying the proposed method in clinical and health technology assessment
+                                            settings could be far reaching in terms of bias reduction and validity of infer-
+                                            ences, as evident from the results presented in this paper.
+
+
+
+1 | INTRODUCTION                                                  (SEM), that is: that each effect modifier modifies the rela-
+                                                                  tive treatment effect (RTE) in the exact the same way
+In clinical trials, effect modification (EM) occurs when the      across all treatments. ML-NMR can, in principle, handle
+relative treatment effect (RTE) is different in one subgroup      non-SEM data, provided that at least one IPD trial is
+compared to another mutually exclusive subgroup.1 Bias in         available per treatment class—a requirement that is
+network meta-analysis (NMA) may occur when the distribu-          rarely met in the HTA setting—while it still assumes
+tion of the effect modifier varies across trials in the           SEM for therapies of the same class. In this paper, we
+network.2–5 While EM imbalance in the NMA setting are a           propose a novel, simple technique entitled network meta-
+common concern, they are not often addressed.6 When indi-         interpolation (NMI), which capitalizes on valuable yet
+vidual patient-level data (IPD) for all trials in the evidence    often overlooked reported subgroup analysis information,
+network are available, EM can be modeled through IPD net-         to facilitate non-SEM estimation of RTEs in NMAs that
+work meta-regression (NMR), which is the gold standard.           incorporate both AgD and IPD.
+However, this is rarely the case: typically, in health technol-       The paper is organized in the following manner. In
+ogy assessment (HTA), IPD is only available for the trial that    Section 2, an overview of existing network meta-analysis
+includes the drug for which reimbursement is sought.              methods is presented. These methods include the standard
+    Several methods have been developed to deal with EM           AgD NMA, AgD NMR, and ML-NMR. In Section 3, net-
+in NMA when the network includes at least one                     work meta interpolation (NMI) is introduced for the case of
+aggregate-level data (AgD) in addition to IPD studies (one        m = 2 dichotomous effect modifying covariates (extension
+or more). HTA guidance exists for AgD NMR,7 matching-             for the general case of m ≥ 1 dichotomous covariates is pro-
+adjusted indirect treatment comparison (MAIC), simulated          vided in Appendix A). In Section 4, we compare NMA, AgD
+treatment comparison (STC) and more recently multilevel           NMR, ML-NMR, and NMI on 1000 randomly simulated
+NMR (ML-NMR).8–12 The 2020 NICE methods review                    datasets comprising a network of seven trials, including one
+taskforce report on sources and synthesis of evidence, sug-       IPD trial, and four treatments. The study covers both SEM
+gests updating NICE DSU TSD 18 to make it clear that              and non-SEM evidence networks, fixed and variable correla-
+MAIC should not be used in many circumstances, a rec-             tion between the two covariates, sequentially chosen covari-
+ommendation supported by simulation studies13–15; STC             ates, and randomly drawn covariates. Additionally, a
+can be used for two-study scenarios; and ML-NMR is the            smaller network consisting of four trials is simulated, and
+preferred population adjustment approach for anchored             the impact of sample size is assessed. A discussion then fol-
+comparisons of more than two studies and multiple treat-          lows, along with some concluding remarks.
+ment comparisons.12 The credibility of MAIC as an indi-
+rect treatment comparison (ITC) method is therefore not
+yet established. However, both MAIC and STC facilitate            2 | OVERVIEW OF EXISTING NMA
+comparison only at the EM conditions of the AgD and in            METHODS
+general are only applicable in the case of one IPD and one
+AgD trials, and for these reasons were omitted from the           In this section, we will provide a brief reminder of the
+rest of this paper.                                               methods we later use in the simulation study as a bench-
+    One common underlying assumption among the vari-              mark for comparison with the proposed NMI
+ous ITC methods, is the one of shared effect modification         methodology.
+                                                                                                                                            17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                         213
+
+
+
+2.1 | AgD network meta-analysis                                     2.2 | Network meta-regression (NMR)
+
+Network meta-analysis (NMA) is a meta-analytic model                In an ideal scenario, NMR would be conducted with IPD
+that involves more than two treatments, combining com-              for all trials. However, such a scenario is not often realistic.
+parisons of treatments that were trialed against each               In this paper we discuss AgD NMR with shared effect
+other in RCTs and indirect comparisons, taking advan-               modification over treatments. While AgD NMR can also
+tage of common comparators. Given an evidence network               be formulated for treatment-independent effect
+consisting of J trials indexed j = 1, …, J with the sample          modification,16 the networks simulated throughout this
+mean of the  kth arm in the jth trial being                       paper are too small for such a highly parameterized model.
+yjk  N θjk , se2jk ,k ¼ 1,…,K j , we model                             When the distribution of potential effect modifiers X1,
+                                                                    …, Xm across the different trials in our network appears
+                        θjk ¼ μj þ d1k 1fk ≠ 1g :             ð1Þ   to vary, we may look to address it by extending
+                                                                    Equation (1) to
+    Throughout, we assume that the reference treatment
+                                                                                                                       
+all networks in this manuscript is indexed ‘1’. Here μj is           θjk ¼ μj þ d1k þ β1 x 1,j þ β2 x 2,j þ … þ βm x m,j 1fk ≠ 1g , k
+the jth study baseline and d1k is the effect of treatment                ¼ 1,2,…,K j ,                                                ð6Þ
+k relative to the reference treatment.3 Further, a random
+effects extension of Equation (1) would be
+                                                                    where xi, j denotes the jth study-level (mean) value of the
+                    
+                        θjk ¼ μj þ δj,1k 1fk ≠ 1g ,                 ith covariate. Consequently, we extend Equation (3) to
+                                                              ð2Þ
+                        δj,1k  N ðd1k , τ2 Þ:
+                                                                     Δθjk ¼ d1k þ β1 x 1,j þ β2 x 2,j þ … þ βm x m,j , k ¼ 2,3,…, K j ð7Þ
+
+accounting for study heterogeneity in population, geogra-           where again,
+phy and other factors that cannot be accounted for. Note
+that model (1) is merely a special case of the generalized           Δθjk ¼ δj,1k þ β1 x 1,j þ β2 x 2,j þ … þ βm x m,j ,k ¼ 2,3,…,K j ð8Þ
+linear model (GLM) with the identity link. Exponential
+families of distributions other than the normal, and their          is the random effect equivalent, for δj,1k  N ðd1k , τ2 Þ.
+compatible link functions, fit easily into this framework.2             Prior elicitation for the β's typically mirrors that of
+    When relative treatment effects are reported (e.g., log-        the basic parameters.7 Note that Equation (6) assumes
+odds ratio, log-relative risk, or log-hazard ratio) and their       that each EM affects the relative treatment effect in the
+associated standard errors, the Equation (1) reduces to             exact same manner, regardless of the treatment identity,
+                                                                    that is: the model makes the shared effect modification
+                Δθjk ≔ θjk  θj1 ¼ d1k , k ¼ 2,3,…, K j ,     ð3Þ   assumption.
+
+with the random effects model following naturally
+                                              
+                                                                    2.3 | Multilevel network meta-
+         Δθjk ¼ δj,1k ,δj,1k  N d1k , τ , k ¼ 2,3,…, K j :
+                                           2
+                                                              ð4Þ   regression (ML-NMR)
+
+                                                                    This model is an extension of the above fixed effects
+    Note that the inputs to this model include contrasts            NMR. A special case for binary effect modifiers was first
+(relative to the reference treatment), as opposed to the            introduced by Jansen in 2012,17 while a more general for-
+arm level quantities yjk of model (1).                              mulation and implementation in software was offered by
+    It is common practice to assign the basic parameters            Phillippo et al. in 2020.10 The model combines individual
+d12, …, d1K (here K denotes the number of distinct treat-           patient level data (IPD) and aggregated data (AgD),
+ments in our network) noninformative prior distributions,           where the former serves to learn the correlation structure
+practically implemented using a normal distribution with            of the covariate space, allowing to average the likelihood
+a large variance. Then, Bayesian inference follows using            component of the AgD over the unobservable distribu-
+posterior samples, where all remaining treatment effects            tion of its covariates.
+are estimated using the consistency equations:                          For individual patient outcome i = 1, …, Ijk in trial
+                                                                    j = 1, …, J and treatment
+                                                                                               k = 1, …, K, with observed out-
+                                                                    come yijk  π Ind θijk (representing a distribution from an
+                          dk1 k2 ¼ d1k2  d1k1 :              ð5Þ
+                                                                    exponential family), we model the mean IPD response
+                                                                                                                                                                   17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+214                                                                                                                                                HARARI ET AL.
+
+
+
+                              X
+                                  m                                                            The case of a single effect modifier, whose details can
+        g θijk ¼ hjk x ijk ¼ μj þ     β1,s þ β2k,s x s,ijk þ dk                        ð9Þ   be found in Table A2 of Appendix A, is particularly
+                                               s¼1
+                                                                                             straightforward and requires no data enrichment. We will
+where g() is a link function;            μj, a trial specific baseline;                   therefore focus on the case of m = 2 effect modifiers, with
+x ijk ¼ x 1,ijk , x 2,ijk , …, x m,ijk , a covariate vector; β1,s, s = 1,                    generalization to any number of effect modifiers also
+…, m, the coefficients of the prognostic covariates; β2k,s,                                  available in Table A2 of Appendix A.
+s = 1, …, m, the coefficients of the effect modifiers spe-
+cific for the kth treatment; and dk, k = 1, …, K, the effect
+of the kth treatment relative to the baselinetreatment.                                    3.1 | Background
+      Now, for summary outcome y:jk  π AgD θ • jk of treat-
+ment k = 1, …, K in trial j = 1, …, J from the AgD, with                                     Consider the following scenario: on performing a system-
+joint covariate distribution f jk ðx 1 , x 2 , …, x m Þ for individuals                      atic literature review (SLR) for NMA, each publication in
+receiving the kth treatment in the jth trial, the aggregated                                 our resultant short list reports not just the RTE and its
+model in ML-NMR for marginal mean outcome θ•jk is                                            associated SE at the ITT population level, but also sub-
+given by                                                                                     group analysis results for two age groups (say, age < 65
+                                                                                             and age > 65) and two disease severity groups (high sever-
+                   Z
+                                                                                           ity and low severity). However, the percentage of high
+        θ • jk ¼            g1 hjk ðx 1 , x 2 , …, x m Þ f jk ðx 1 , x 2 , …, x m Þ
+                       ℝ
+                       m                                                                     severity patients among the age < 65 subpopulation, for
+                   dðx 1 , x 2 , …, x m Þ                                                    example, is not reported, as is the proportion of age < 65
+                                                                                    ð10Þ     patients among high severity patients. The pattern repeats
+                                                                                             itself for all other combinations. Table 1 summarizes the
+where integration is replaced by summation for the sub-                                      format of the single study data format discussed.
+set of discrete covariates. The integral (10) is implemen-                                       Subgroup analysis results as discussed above are often
+ted using Monte Carlo integration nested within the                                          reported in RCT papers but so far have not been exploited
+MCMC sampling, to approximate the aggregate-level                                            in the NMA setting. Hereafter, we will demonstrate how,
+likelihood, to be added to the IPD likelihood component.                                     with the availability of additional information on the cor-
+                                                                                             relation structure of the effect modifiers of interest (or IPD
+                                                                                             to estimate it), it may help very effectively balance the dif-
+3 | NETWORK M ETA-                                                                           ferent studies in an NMA, even when the effect modifica-
+INTERPOLATION (NMI)                                                                          tion structure is not shared between them.
+                                                                                                 The data requirements of NMI, as well as the assump-
+In this section, we will describe NMI: a novel approach                                      tions of the estimation method, are as follows.
+to balancing patient populations from various studies
+prior to NMA, using regression techniques to relate out-
+comes and effect modifiers. NMI consists of a data                                           3.2 | Data requirements
+enrichment step, followed by two regression steps. The
+output is a balanced, NMA-ready AgD, evaluated at an                                         1. The treatment network must be connected.
+effect modifier configuration of the researcher's choice,                                    2. All effect modifiers are dichotomous and are reported
+which could reflect the pivotal trial or a real-world popu-                                     at the very least at the study level (e.g., the proportion
+lation of interest.                                                                             of 1's) for all studies,
+
+
+
+TABLE 1                    The available data for every AgD study in the NMI network
+
+    Proportion of X1 = 1 (high severity)                        Proportion of X2 = 1 (aged 65+)          Treatment effect (TE)       Standard error (SE)
+    x 1 (study level)                                           x 2 (study level)                             b ðx 1 , x 2 Þ
+                                                                                                         c1 ¼ Δ
+                                                                                                         TE                          c1 ¼ b
+                                                                                                                                     SE   σ ðx 1 , x 2 Þ
+    1 (severe case only)                                        –                                             b ð1, Þ
+                                                                                                         c2 ¼ Δ
+                                                                                                         TE                          c2 ¼ b
+                                                                                                                                     SE   σ ð1, Þ
+    0 (mild case only)                                          –                                             b ð0, Þ
+                                                                                                         c3 ¼ Δ
+                                                                                                         TE                          c3 ¼ b
+                                                                                                                                     SE   σ ð0, Þ
+    –   a
+                                                                1 (patients aged 65+)                         b ð, 1Þ
+                                                                                                         c4 ¼ Δ
+                                                                                                         TE                          c4 ¼ b
+                                                                                                                                     SE   σ ð, 1Þ
+    –                                                           0 (patients aged 65)                         b ð, 0Þ
+                                                                                                         c5 ¼ Δ
+                                                                                                         TE                          c5 ¼ b
+                                                                                                                                     SE   σ ð, 0Þ
+a
+Denotes missing value.
+                                                                                                                                                       17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                                    215
+
+
+
+3. If more than one effect modifier exists, at least one                     Remark 3.1. Throughout this paper we will
+   IPD trial is available for capturing the correlation                      use ðx 1 , x 2 Þ interchangeably to denote both
+   between the effect modifiers, or else, the correlations                   the true and unknown parameter vector as
+   between all effect modifiers are known quantities                         defined in (12) and the corresponding ran-
+   from the data,                                                            dom, observed sample proportions. The
+4. The information available for all AgD studies includes                    reader should interpret the notation according
+   treatment effect estimate and standard error at the                       to the context at which it appears.
+   study level, as well as both levels of all effect modifiers
+   (but not necessarily their combinations).                                 Example 3.1. Consider a dichotomous out-
+                                                                             come NMA with m = 2 effect modifiers, X 1 ¼
+                                                                             age  f < 65, ≤ 65g      and     X 2 ¼ Severity 
+3.3 | Modeling assumptions                                                   flow, highg and a treatment indicator Trt
+                                                                             {A, B}. Figure 1 compiles the information
+1. We assume that the mean response, θ, follows the                          published in a single publication that includes
+   generalized linear model                                                  subgroup analyses: the top row contains the
+                                                                             intention-to-treat (ITT) treatment effect at the
+ gðβ, T, X 1 , X 2 , βÞ ¼ β00 þ β01 X 1 þ β02 X 2 þ β03 T þ β13 X 1 T        trial level, in which 62.8% of the patients were
+                          þ β23 X 2 T,                                       older than 65% and 45.7% of them were
+                                                                 ð11Þ        severely at baseline. The following two rows
+                                                                             contain subgroup analysis results for patients
+   with T denoting the treatment status (0 or 1) and g()                    older and younger than 65, respectively. The
+   a link function.                                                          final two rows contain subgroup analyses for
+                                                                             high- and low-severity patients, respectively.
+2. The correlation matrix of the effect modifiers is the                     As expected, no information of the distribu-
+   same across all studies.                                                  tion of either EM is reported in the subgroup
+                                                                             analyses with respect to the other.
+   If the above assumptions hold, NMI will allow us to
+overcome non-shared effect modification in NMA, as we                       Step 1: The first step of NMI includes imputing the
+shall demonstrate in the simulation study of Section 4.                 missing values for the two EMs X1, X2, with estimated
+                                                                        means x 1 and x 2 (denoting the proportions reported at
+                                                                        the trial level—top row of the table) whose variances are
+3.4 | Description of the method
+                                                                                              x 1 ð1  x 1 Þ             x 2 ð1  x 2 Þ
+                                                                                    σ 2x1 ¼
+                                                                                    b                            σ 2x2 ¼
+                                                                                                             and b                      ,
+NMI comprises three steps. In the NMI steps below, we                                               n                          n
+follow the scheme of data enrichment and application of
+a known method to the enriched data, the kind that                      respectively, and the Pearson correlation ρx 1 ,x2 , either
+appears in a time series-based version in the context of                estimated from an IPD trial, or otherwise known from
+neurological studies.18                                                 the literature. Imputation is done using the best linear
+                                                                        unbiased (BLUP) predictor.19,20
+     Step 1: Enrichment of the trial data. Here we use the
+                                                                                                                     
+     best linear unbiased predictor to fill in the missing                  x j ðx i Þ ¼ b
+                                                                                          ρx 1 ,x 2 b
+                                                                                                    σx1 b
+                                                                                                        σ x2 x i  x j þ x j , 1 ≤ i < j ≤ 2:   ð13Þ
+     values in Table 1. This is achieved by using the available
+     data and the correlation between effect modifiers X1
+     and X2 as measured in the IPD or elsewhere reported.
+     Step 2: Estimation of the treatment effect and its
+     associated variance at specified EM values
+
+                ðx 1 , x 2 Þ ≔ ðPðX 1 ¼ 1Þ, PðX 2 ¼ 1ÞÞ          ð12Þ
+
+     that will apply to all studies in the network for the
+     purpose of indirect treatment comparison (ITC).
+     Step 3: Application of standard NMA on the interpo-
+     lated treatment effect and variance.                               FIGURE 1         Raw data for the trial in Example 3.1
+                                                                                                                                                                      17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+216                                                                                                                                                   HARARI ET AL.
+
+
+
+      Figure 2 demonstrates the application of Step 1, trans-                                                                      T
+                                                                                                                 b
+                                                                                                                 b   b
+                                                                                                                     b     b
+                                                                                                                           b     b
+                                                                                                                                 b
+forming the original trial data X into its imputed ver-                                                          β ¼ β03 , β13 , β23 :
+sion X*.
+      Step 2: From (11), the estimated treatment effect at
+ðx 1 , x 2 Þ is given by                                                                  Similarly, application of Equation (15) to all rows
+                                                                                      of the imputed dataset, yields the underdetermined
+                                                                     
+ b ðx 1 , x 2 Þ ¼ g b
+ Δ                   β; T ¼ 1, x 1 , x 2 , β  g b
+                                                 β; T ¼ 0, x 1 , x 2 , β ,            system
+
+                                                                                                                  M2 σ      b2Δ51
+                                                                                                                     b61 ¼ σ                                ð17Þ
+and the study results therefore induce the following two
+equations for TE,
+                                                                                      where
+                      b ðx 1 , x 2 Þ ¼ b
+                      Δ                β03 þ b
+                                             β13 x 1 þ b
+                                                       β23 x 2               ð14Þ                       2                                3
+                                                                                                        j j      j     j    j      j
+                                                                                                      6                                  7
+                                                                                                 M2 ¼ 4 1 x1 2 x2 2 2x1 2x2 2x1 x2 5
+and for the SE,                                                                                             j     j    j    j      j       j         56
+
+
+ σ Δ ðx 1 , x 2 Þ ¼
+ b                        σ 00 þ x 21 b
+                          b           σ 11 þ x 22 b
+                                                  σ 22 þ 2x 1 b
+                                                              σ 01 þ 2x 2 b
+                                                                          σ 02 ð15Þ   and
+                                        !1=2                                                                         h 2         i
+                                                                                                                               2 T
+                                                                                                                      c , …, SE
+                                                                                                                b2Δ ¼ SE
+                                                                                                                σ            c
+                                 σ 12
+                      þ 2x 1 x 2 b                                                                                      1      5
+
+
+
+                                                                                    as in Table 1.
+where bσ ij ¼ Cov b
+                  βi , b
+                       βj ,0 ≤ i,j ≤ 2: Applying Equation (14)                            Using the Moore-Penrose pseudo-inverse,21,22 we may
+to each of the rows of the imputed dataset of Figure 2,                               derive the unique minimum Euclidean norm solution of
+yield the overdetermined system                                                       Equation (17),
+
+                                                                                                                              1 2
+                                 M1 b      b 51
+                                    β31 ¼ Δ                                 ð16Þ                               b
+                                                                                                                σ
+                                                                                                                b ¼ MT2 M2 MT2    σΔ ,
+                                                                                                                                  b
+
+where
+                                                                                      yielding
+                 2                  3
+                      j    j    j h             iT
+             6           7                                                                             h                                        iT
+        M1 ¼ 4 1 x1 x2 5 and Δ
+                               b ¼ TE
+                                    c 1 , …, TE
+                                             c5                                                      b
+                                                                                                     b¼ b
+                                                                                                     σ  bσ 00 , b
+                                                                                                                σ 11 , b
+                                                                                                                b      σ 22 , b
+                                                                                                                       b      σ 01 , b
+                                                                                                                              b      σ 02 , b
+                                                                                                                                     b      σ 12 :
+                                                                                                                                            b
+               j j j 53
+                                                                                                                   b     b
+                                                                                          Once solved, we may plug b
+                                                                                                                   β and σ
+                                                                                                                         b in (14) and (15)
+as in Table 1. Solving Equation (16) using least squares                              to   predict
+                                                                                       new new   TE   and  SE   at  any   desired values
+yields                                                                                 x 1 , x 2 . For our rolling example, we will use
+
+
+
+
+F I G U R E 2 Step 1 of NMI demonstrated on the single trial of Example 3.1. Here we impute the missing subgroup analysis EM values.
+[Colour figure can be viewed at wileyonlinelibrary.com]
+                                                                                                                                       17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                    217
+
+
+ new new 
+ x1 , x2       ¼ ð0:675, 0:475Þ, a pair of values chosen to             3.5 | Practical suggestions for studies
+be at the center of their respective ranges. This causes the            with unreported subgroup analyses
+collapsing of the five data points provided by a single trial
+into a single row as presented in Figure 3.                             The following are suggestions for strategies to be
+    Step 3: The process described in steps 1–2 is repeated              employed when a particularly important study that does
+for all other trials in our network, and the resultant out-             not meet the NMI data requirements of stratified analyses
+puts are then incorporated in a standard NMA, where                     by all key (binary) EMs surfaces during our SLR,
+the distribution of the effect modifiers ðx 1 , x 2 Þ across the
+different studies can now be considered balanced.                       1. If the head-to-head comparison reported in the study
+(Figure
+ new new 4,  implication (3)). Note that the choice of                   is not reported in any other study in our network, we
+ x1 , x2       ¼ ð0:675, 0:475Þ, which will accompany us                   may just assume that the EMs under consideration do
+for the rest of this paper, was arbitrary. This flexibility, to            not modify the RTE in this particular instance
+perform ITC at any EM configuration, is an important                       (or else, it is likely that relevant subgroup analyses
+advantage of NMI on, for example, MAIC or STC. The                         would exist). We may therefore use the study-level TE
+reader should note that any IPD trial in our network will                  and SE as-is in the final NMA.
+at this point be summarized and analyzed in its AgD                     2. If the head-to-head comparison reported in the study
+form, along with all other studies, in the final NMA.                      appears in another study (for which all relevant
+
+
+
+
+FIGURE 3        Step 2 of NMI applied to the trial data of Example 3.1 [Colour figure can be viewed at wileyonlinelibrary.com]
+
+
+
+
+F I G U R E 4 Illustration of Network Meta Interpolation (NMI) with m = 2 covariates [Colour figure can be viewed at
+wileyonlinelibrary.com]
+                                                                                                                                                 17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+218                                                                                                                              HARARI ET AL.
+
+
+
+      subgroup analyses exist), we may borrow what we                   Two networks of different sizes were considered for this
+      learned of the way that the different covariates modify           simulation, as described in the following sections.
+      the RTE, while offsetting the TE according to the spe-
+      cific study baseline. More specifically,
+                                                         b
+       Suppose that we have already derived b           β¼             4.1.1 |       Base case
+                         T
+           b
+           b     b b
+           β03 , b
+                 β13 , b
+                       β23 in Step 2 of NMI for study 1 that            A network, consisting of four treatments denoted A (the
+        compared treatments A and B, and we can use it to               reference treatment), B, C, and D and seven head-to-head
+                   b                                                    trials: three A-B trials (numbered 1–3), three A-C trials
+        estimate Δ b 1 ðx 1 , x 2 Þ at any ðx 1 , x 2 Þ.
+                                                                    (numbered 4–6) and one A-D trial (numbered 7), was
+       Denote by x 1 , x 2 and Δ       b 2 x  , x  the EM values
+                                                 1     2                simulated. The simulated treatment effects models
+        for study 2, also comparing studies A and B (with-              included two effect modifiers: X1 and X2. In each of the
+        out subgroup analyses), and the reported TE,                    trials, 300 individual patient outcomes were simulated
+        respectively.                                                   per treatment arm, following the logistic model
+       To estimate the difference between these two stud-
+                                                                                    
+        ies' baselines, calculate                                                                     ðjÞ        ðjÞ        ðjÞ
+                                                                              logit pij ¼ β00 þ β01 X 1i þ β02 X 2i þ β03 T i
+                                 b                                                            ðjÞ   ðjÞ      ðjÞ   ðjÞ   ðjÞ
+                                                                                            þ β13 X 1i T i þ β23 X 2i T i þ εi ,        ð18Þ
+                    b b 2 x, x  Δ
+                    δ¼Δ            b1 x , x                                                                 
+                           1   2       1    2                                                ðjÞ
+                                                                                            εi  N 0, 0:22 :
+                                        
+       The TE for study 2 at x new  new
+                                1 , x2     (the conditions
+        of the eventual NMA) may then be approxi-                       where j = 1, …, 7 denotes the trial number and pij the
+        mated by                                                        event rate for patient i = 1, …, 600. The term ϵi here is
+                                                                        used as a random baseline value assigned to each study.
+                                                                      We set β01 = β02 = 0, ensuring only the probabilities of
+          b 2 x new , x new ¼ b
+          b
+          Δ                   b       b new b
+                                    δþb
+                              β03 þ b β13 x 1 þ b
+                                                β23 x new
+                1       2                             2 :
+                                                                        the active treatments (B, C, D) are impacted by the two
+                                                                        effect modifiers X1 and X2. All A-B and A-C trials were
+       Finally, let b
+                     σ Δ1 ð, Þ denote the interpolated stan-
+                     b                                                  summarized and retained only in their AgD form, while
+        dard error in study 1, as in (15). We may approxi-              the A-D trial was kept as an IPD. The resulting network
+        mate the study 2 counterpart at the eventual NMA                is shown in Figure 5.
+        conditions by                                                        Figure 6 shows the relation between the covariate
+                                                                        x 1 —connecting the corresponding proportion of 1's in
+
+                                             
+              new new  bσ Δ1 x new
+                          b      1 , x2
+                                          new                  
+         b
+         σ Δ2 x 1 , x 2
+         b              ¼            b     σ Δ2 x 1 , x 2 ,
+                             b
+                             σ Δ1 x 1 , x 2
+                             b
+                           
+            σ Δ2 x 1 , x 2 is the reported SE of study 2.
+      where b
+
+
+
+4 | S I MU LA T I ON S T U D Y
+
+4.1 | Models included
+
+We performed an exhaustive comparison of NMI, NMA,
+NMR, and ML-NMR for the case of m = 2, g() = logit()
+and randomly assigned treatment T with PðT ¼ 1Þ ¼
+PðT ¼ 0Þ ¼ 12 (although this is done out of convenience
+and is not a requirement of the method presented here).
+For all methods, we used vague priors for the treatment                 F I G U R E 5 The larger network used for the simulation study
+effects    and      regression  coefficients, that   is,                in this paper, including four treatments and seven trials. Figure was
+d,β1 ,β2  N ð0, 106 Þ, and the random effects variance                 generated using the multinma R library14,23 [Colour figure can be
+(where applicable) was assigned a Uniform (0,5) prior.                  viewed at wileyonlinelibrary.com]
+                                                                                                                                17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                             219
+
+
+
+F I G U R E 6 Graphical
+representation on how NMA,
+NMR, ML-NMR and NMI deal
+with EM in case of SEM and
+non SEM datasets [Colour figure
+can be viewed at
+wileyonlinelibrary.com]
+
+
+
+
+the study and the target value x 1 ¼ 0:675—and the esti-             The effect modifiers X1 and X2 were sampled with an
+mated relative treatment effect for each method consid-          identical Pearson correlation ρ = 0.244, a value that facil-
+ered in the paper for both the SEM and non SEM                   itates sampling from a bivariate distribution with mar-
+datasets. Note that NMI is the only method that facili-          ginal binary distributions for all EM combinations in this
+tates the estimation of differing slopes for non-SEM data.       simulation, according to the restrictions on the Pearson
+For simplicity, only one EM is plotted.                          correlation provided in Appendix C.
+    The proportions x 1 and x 2 of 1's in each of X1 and X2          The above specifications were used twice, for two dif-
+were selected individually for each trial sequentially in        ferent base case scenarios of interest: the first of which
+the [0.50, 0.85] and [0.30, 0.65] ranges respectively, to        involved sampling of random datasets from the network
+cover a wide spectrum of values, and were held fixed for         using a SEM data generating mechanism, while the sec-
+each trial across all simulated datasets. The actual pro-        ond one used non-SEM randomly drawn datasets.
+portions x 1 and x 2 for each trial in the base case were pre-   Table 2 displays the settings for the two base case scenar-
+sented in Table 2.                                               ios of the fixed proportion x and identical correlation ρ,
+                                                                                                                                                      17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+220                                                                                                                                   HARARI ET AL.
+
+
+
+TABLE 2       Logistic regression coefficients for model (16), the data generating model used for all simulation studies appearing in this
+paper
+
+                                               x                                                     Parameter β
+
+  Data type     n/arm        Network           x 1 (by trial)        x 2 (by trial)        ρ         (β00, β01, β02, β03, β13, β23)
+  SEM           300          3 A-B (AgD)       (0.50, 0.56, 0.62)    (0.30, 0.36, 0.42)    0.244     (1.39, 0.00, 0.00, +0.69, +1.61, +1.00)
+                             3 A-C (AgD)       (0.68, 0.73, 0.79)    (0.48, 0.53, 0.59)    0.244     (1.39, 0.00, 0.00, +1.00, +1.61, +1.00)
+                             1 A-D (IPD)       (0.85)                (0.65)                0.244     (1.39, 0.00, 0.00, +1.50, +1.61, +1.00)
+  Non-SEM       300          3 A-B (AgD)       (0.50, 0.56, 0.62)    (0.30, 0.36, 0.42)    0.244     (1.39, 0.00, 0.00, +0.69, +1.00, 0.00)
+                             3 A-C (AgD)       (0.68, 0.73, 0.79)    (0.48, 0.53, 0.59)    0.244     (1.39, 0.00, 0.00, +1.00, +1.61, +1.00)
+                             1 A-D (IPD)       (0.85)                (0.65)                0.244     (1.39, 0.00, 0.00, +1.50, 1.20, 1.00)
+
+
+including the regression parameters governing the nature                      the smaller number of trials, we used this network to
+of the effect modification. These factors are explored in                     also examine the impact of smaller sample sizes—150
+scenario analyses.                                                            versus 300 patients per arm. In this network, the per-
+                                                                              formance of the different methods was investigated
+                                                                              under variable x 1 and x 2 and an identical ρ across all
+4.1.2   | Scenario analysis                                                   studies. Both SEM and non-SEM datasets were stud-
+                                                                              ied. Because no repeated head-to-head comparisons
+The first three scenarios are repetitions of these two base-                  between any pair of treatments was present in this
+case (SEM and non-SEM) simulation scenarios where                             network, fixed effect models were fitted.
+only the proportion x or the correlation ρ differed. Sce-
+nario analyses four and five investigate the impact of
+smaller network and sample size.                                          4.1.3 |         Analysis
+
+1. Scenario 1a–b: Random ρ, One of the key assump-                        In all scenarios, treatment effect estimates (TE) and their
+   tions of NMI is that the Pearson correlation between                   standard errors (SE) for the first six trials were derived by
+   EMs is identical across all studies, and the variable ρ                fitting an unadjusted logistic model to the simulated data,
+   scenarios aim to test the sensitivity of the method to                 as well as at the subgroup level in the case of NMI,
+   violation of this assumption. Here the effect modifiers                regressing on treatment assignment alone, that is,
+   X1 and X2 were sampled with a Pearson correlation
+                                                                                                     
+   sampled randomly in the [0, 0.244] interval. Note that                                                              ðjÞ
+                                                                                               logit pij ¼ β00 þ β03 T i :                   ð19Þ
+   correlated binary variables can only be drawn from a
+   bivariate distribution with a Pearson correlation
+   within a certain range that is a function of x 1 and x 2 ,                 The proportion of 1's in both effect modifiers was also
+   the proportions of 1's for the two variables. The 0.244                recorded, to be used in all methods but standard NMA,
+   value was selected as the largest correlation coefficient              while the seventh trial was used to estimate the correla-
+   allowing random sampling for all x 1 and x 2 combina-                  tion coefficient between EMs for NMI and also as an
+   tions in the above-described scenario.                                 input for ML-NMR. It was then summarized and used as
+2. Scenario 2a–b: Random x, In this scenario, x 1 and                     AgD for NMA, NMR and NMI. We then proceeded to fit
+   x 2 were shuffled randomly between trials and between                  random effect (or fixed effect, in the case of scenarios 4a–
+   simulated datasets. In these conditions, we expect all                 5b) NMI, NMA, NMR, and ML-NMR models to the resul-
+   methods to yield unbiased estimators of all treatment                  tant AgD and IPD datasets, including interpolation to the
+   effects, but with differing levels of variability.                     pre-assigned values of x 1 ¼ 0:675 and x 2 ¼ 0:475. The
+3. Scenarios 3a–b: Random x and random ρ, In these                        MCMC sampling consisted of three chains and was run
+   two (SEM and non-SEM) scenarios both x and ρ were                      for a total of 1500 iterations, discarding the first 500 itera-
+   drawn randomly over trials and simulations.                            tions. This was repeated over N = 1000 simulations.
+4. Scenarios 4a–5b: Small network, The smaller net-
+   work followed a similar structure to that of the larger
+   network with the only difference being the smaller                     4.1.4 |         Performance metrics
+   number of head-to-head trials: in this case, only one                                      n o6
+   of each comparison was randomly generated. Besides                     Given true TE values dðiÞ , with
+                                                                                                            i¼1
+                                                                                                                                        17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                     221
+
+
+
+    dð1Þ ¼ TEAB ,dð2Þ ¼ TEAC ,dð3Þ ¼ TEAD ,dð4Þ ¼ TEBC ,dð5Þ                  In the SEM dataset, in terms of RTE estimation accu-
+         ¼ TEBD ,dð6Þ ¼ TECD ,                                           racy, NMI performed the best when averaging over all
+                                                                         comparisons with RMSE of 0.222, followed by ML-NMR
+                                                                         with 0.255. The corresponding average RMSE over all
+                                    ðiÞ 1000
+and simulation estimates fb    dj gj¼1 ,i ¼ 1,…,6, we calcu-             treatment comparisons in the network for NMR and
+lated the root mean squared error (RMSE) to assess the                   NMA was 0.381 each. The BD comparison was estimated
+goodness of fit for the different models –                               with the largest error across all methods, with RMSE of
+                                                                         0.564 (NMR), 0.607 (NMA), 0.326 (ML-NMR), and 0.285
+             vﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+             u          1000 h                      i2                   (NMI). This can be explained by the fact that the sampled
+             u          X            ðiÞ
+         d i¼t 1
+        RMSE                      dj  dðiÞ ,i ¼ 1,…,6:
+                                  b                            ð20Þ      proportions of 1's for X1 (0.56 on average and 0.85) and
+              1000 j¼1
+                                                                         X2 (0.36 on average and 0.65) for the AB and AD trials
+                                                                         (see Table 2) were the furthest of all comparisons from
+    Additionally, we calculated the proportion of the time               the pre-assigned values of x 1 ¼ 0:675, and x 2 ¼ 0:475 for
+that each treatment effect was covered by its correspond-                the ITC. CrI coverage for both NMI and ML-NMR was
+ing 95% Bayesian credible interval and recorded it under                 consistently close to 99% and, in most cases, higher than
+‘Coverage’ for all methods, to assess the quality of statis-             NMA and NMR. This over-conservatism was the result of
+tical inferences based on them.                                          the use of uniform priors for the random effects variance
+                                                                         in the analysis of a fairly small network.
+                                                                              More interestingly, in the non-SEM dataset, while NMI's
+4.2 | Results                                                            performance (average RMSE = 0.228, average cover-
+                                                                         age = 99%) was similar to its performance in the SEM data-
+4.2.1      | Base case                                                   set, the performance of the SEM-based methods—namely:
+                                                                         NMR and ML-NMR—deteriorated considerably, with aver-
+Table 3 provides the root mean squared error (RMSE)                      age RMSE of 0.541 and 0.447 and average coverage of 80.2%
+and 95% CrI coverage information for the SEM and non-                    and 92.6%, respectively. NMA, being the simplest method of
+SEM datasets at the model parameter levels. The corre-                   the four, benefited this time from the choice of x 1 ¼ 0:675
+sponding boxplots and density curves are presented in                    and x 2 ¼ 0:475, representing the average EM values, and
+the appendix (see Appendix B).                                           its lack of any false assumptions on the EM structure.
+
+
+
+TABLE 3         Summary of the performance of the different methods at the parameter level for the base case
+
+                       RMSE                                                         Coverage
+
+  Parameter            NMR           NMA            ML-NMR             NMI          NMR            NMA         ML-NMR         NMI
+  (a) SEM data
+    dAB                0.237         0.417          0.199              0.137        94.8%          59.0%        97.7%         99.7%
+    dAC                0.258         0.127          0.178              0.140        75.4%          99.1%        98.5%         98.8%
+    dAD                0.448         0.254          0.303              0.270        90.8%          99.2%        98.2%         97.7%
+    dBC                0.353         0.385          0.208              0.169        94.5%          89.1%        99.3%         99.8%
+    dBD                0.564         0.607          0.326              0.285        95.0%          84.7%        99.3%         98.8%
+    dCD                0.321         0.316          0.282              0.272        96.5%          98.5%        98.9%         99.4%
+    Average            0.381         0.381          0.255              0.222        91.2%          88.3%        98.7%         99.0%
+  (b) Non-SEM data
+    dAB                0.246         0.154          0.376              0.116        91.7%          98.1%        89.1%         99.7%
+    dAC                0.216         0.128          0.348              0.148        84.6%          99.1%        92.2%         98.8%
+    dAD                0.676         0.325          0.248              0.255        64.3%          96.4%       100.0%         99.0%
+    dBC                0.418         0.175          0.697              0.197        88.2%          99.4%        77.2%         98.9%
+    dBD                0.862         0.275          0.449              0.270        76.8%          98.8%        98.4%         99.2%
+    dCD                0.526         0.313          0.430              0.316        75.9%          98.2%        98.8%         98.3%
+    Average            0.541         0.241          0.447              0.228        80.2%          98.3%        92.6%         99.0%
+                                                                                                                                                    17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+222                                                                                                                                 HARARI ET AL.
+
+
+
+4.2.2        | Scenarios analysis                                                      trials were generally conducted in populations with
+                                                                                       the lowest x 1 and x 2 proportions and the A-D trial was
+Table 4 summarizes the performance of the four methods                                 conducted in the population with the highest corre-
+in terms of RMSE and coverage (averaged over all treat-                                sponding proportions. This setup mostly impacted the
+ment effects) on the large network across a variety of sce-                            RMSE of the SEM-reliant methods of NMR and ML-
+narios. Here, the vectors of proportions x 1 and x 2 of 1's in                         NMR in the non-SEM scenarios, as these methods
+X1 and X2 were in some scenarios held fixed as in                                      improved considerably when switching to random x 1
+Table 2, and in others they were randomly permuted in                                  and x 2 . A similar pattern (but to a smaller extent) was
+each simulation, to ensure that no treatment effect is con-                            observed in the CrI coverage of ML-NMR. However,
+sistently more difficult to estimate than others. An identi-                           NMI saw little impact of this design imbalance in
+cal correlation coefficient ρ = 0.244 between the EMs                                  either performance index (RMSE or coverage).
+was sometimes used for all studies, and in other times it                           2. The impact of non-identical ρ With the identical
+was drawn randomly for each study within the range                                     correlation structure between EMs across the different
+[0,0.244], to test the resilience of NMI to the core assump-                           studies in the network being one of the modeling
+tion of identical correlation matrices across studies. As in                           assumptions of NMI, one would expect to see deterio-
+Section 4.2.1, datasets were drawn at random under both                                ration in the performance of NMI in terms of RMSE
+the SEM and non-SEM data generating models in                                          and possibly CrI coverage too, as we switch from iden-
+Table 2. The detailed results at the comparison level for                              tical to non-identical scenarios, with little-or-no
+these scenario analyses are presented in the appendix                                  impact on the performance of the other methods.
+(Tables B1 and B2). To summarize,                                                      However, no such degradation in the performance
+                                                                                       NMI was observed in our scenario analysis for either
+1. The impact of random x 1 and x 2 In the base case                                   performance criterion.
+   simulation, the monotonically increasing sequences of                            3. The impact of non-SEM data generation As
+   the proportions of 1's in X1 and X2 meant that the A-B                              expected, the performance of NMR and ML-NMR was
+
+
+T A B L E 4 Overall performance summaries by RMSE and 95% CrI coverage across four methods (MR, NMA, ML-NMR, NMI) in the
+larger network
+
+                                                                                           Method
+
+  Scenario              Prop x              Corr ρ                     Model               NMR           NMA           ML-NMR           NMI
+  (a) RMSE
+      Base(a)           Fixed               Identical                  SEM                  0.381         0.381         0.255            0.222
+      Base(b)                                                          Non-SEM              0.541         0.241         0.447            0.228
+      1(a)                                  Non-identical              SEM                  0.382         0.390         0.257            0.221
+      1(b)                                                             Non-SEM              0.556         0.246         0.433            0.230
+      2(a)              Random              Identical                  SEM                  0.274         0.373         0.265            0.213
+      2(b)                                                             Non-SEM              0.431         0.326         0.342            0.229
+      3(a)                                  Non-identical              SEM                  0.269         0.359         0.243            0.214
+      3(b)                                                             Non-SEM              0.416         0.314         0.336            0.225
+  (b) Coverage
+      Base(a)           Fixed               Identical                  SEM                 91.2%         88.3%         98.7%            99.0%
+      Base(b)                                                          Non-SEM             80.2%         98.3%         92.6%            99.0%
+      1(a)                                  Non-identical              SEM                 91.1%         86.6%         98.9%            98.7%
+      1(b)                                                             Non-SEM             80.4%         98.9%         93.0%            99.0%
+      2(a)              Random              Identical                  SEM                 87.5%         96.5%         99.0%            99.2%
+      2(b)                                                             Non-SEM             74.0%         95.5%         98.8%            99.2%
+      3(a)                                  Non-identical              SEM                 88.9%         96.6%         99.1%            99.2%
+      3(b)                                                             Non-SEM             76.9%         96.6%         98.2%            98.9%
+
+Note: Scenarios include altering the proportions x, correlation ρ and SEM status.
+                                                                                                                                  17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                               223
+
+
+
+   considerably and negatively impacted by the change             NMA, ML-NMR, and finally NMR. Reducing sample size
+   from datasets generated by a SEM model to datasets             to 150 patient per trial in the small network (scenarios
+   generated by a non-SEM one—a phenomenon observed               5a–b) further increases the RMSE for all methods as
+   in both RMSE and CrI coverage. Standard NMA, with              expected. Please note that the coverage of the NMR is
+   no effect modification built-in mechanism, benefited           best in the small sample size (scenario 5a–b), but that is
+   greatly in both aspects in this simulation from the vary-      due to substantial uncertainty over the RTEs, as the cor-
+   ing effect modifications canceling each other out, while       responding RMSE of the NMR are poorest compared to
+   NMI, which still saw a small decrease in estimation            NMA, ML-NMR and NMI.
+   accuracy (as measured by RMSE), was—compared to
+   NMR and ML-NMR—only minimally impacted in
+   terms of estimation accuracy, saw no change in cover-          5 | DISCUSSION
+   age, and was still the best performer in all scenarios.
+                                                                  In the presence of effect modification, NMAs are suscep-
+                                                                  tible to producing biased results. The NMI method pro-
+4.2.3      | Summary of scenario analysis                         posed in this paper is a fast and simple technique,
+                                                                  designed to overcome the often misplaced SEM assump-
+To summarize the findings of this section, NMI                    tion and the limitations in applying ITC at specific EM
+showed stability with respect to design imbalance, vio-           configurations. The simulated examples suggest that NMI
+lation of the identical EM correlation structure                  can dramatically improve the accuracy of RTE estimation
+assumption, and non-SEM sampling. That stability                  when compared to NMA, NMR, and ML-NMR when
+manifested itself in both estimation accuracy and CrI             SEM does not hold and is at least on par with ML-NMR
+coverage. In this simulation study, it was the best per-          when it does hold. This was confirmed over a wide spec-
+former in all scenarios, and most of the time by a size-          trum of scenarios that included multiple network and
+able margin.                                                      trial sizes. While this paper presents results for dichoto-
+    Table 5 presents the overall results related to the           mous effect modifiers since these are typically reported in
+small network scenarios 4a–5b, in which the proportions           subgroup analyses, the adaptation to categorical variables
+x are drawn randomly and identical ρ = 0.244 across all           of any size is straightforward through their recoding into
+trials. In this reduced network, the same settings are            multiple binary variables (relative to a chosen baseline
+applied to scenario 4a–b as in scenario 1a–b (Table 4). As        level). Purely numeric covariates, however, do not fit in
+expected, the results of scenarios 1a–b and 4a–b are simi-        this framework. Any attempt to discretize them must
+lar in the sense that for SEM the lowest bias in terms of         take into account the risk of overparameterization.
+RMSE is seen in NMI followed by ML-NMR, NMA, and                      The assumptions underlying NMI include the correct-
+NMR. For non-SEM (scenario 4b), consistent with large             ness of model (13) and an identical correlation
+network scenarios (scenario 2b), NMI is preferred over            structure between EMs across all studies, and binary
+
+
+
+T A B L E 5 Overall performance summaries by RMSE and 95% CrI coverage for the different methods (MR, NMA, ML-NMR, NMI) in the
+small network in terms of arm sample size and the SEM status
+
+                                                                            Method
+
+  Scenario       Prop x         Corr ρ         n/arm        Model           NMR          NMA          ML-NMR          NMI
+  (a) RMSE
+    4(a)         Variable       Identical      300          SEM              0.856        0.582        0.322           0.285
+    4(b)                                                    Non-SEM          0.829        0.444        0.746           0.286
+    5(a)                                       150          SEM              1.169        0.637        0.549           0.500
+    5(b)                                                    Non-SEM          1.102        0.498        0.839           0.443
+  (b) Coverage
+    4(a)         Variable       Identical      300          SEM             96.0%        51.7%        93.2%           92.5%
+    4(b)                                                    Non-SEM         94.2%        69.0%        51.7%           93.8%
+    5(a)                                       150          SEM             97.2%        69.3%        91.1%           93.5%
+    5(b)                                                    Non-SEM         96.3%        81.4%        65.5%           94.0%
+                                                                                                                               17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+224                                                                                                            HARARI ET AL.
+
+
+
+(or categorical) EMs. The data requirements include the        representing the borrowing fraction of the RWD, is used
+availability of data at the subgroup level for all studies     to moderate the impact of an external data source on the
+and EM levels, imposing clear limitations on the usability     posterior inference on the treatment effect of interest,
+of NMI. While the need to extract subgroup analyses            although—in its current implementation—the method
+places some additional burden on researchers, it is this       presented in this paper is limited to connected networks
+availability of rarely used data that enables the estimation   and cannot include single arm studies.
+of nontrivial effect modification. Practical suggestions on        Lastly, while this paper includes a comprehensive
+the inclusion of studies that do not meet the full data        simulation study, testing our method on a real applica-
+requirements are discussed in Section 3.3.                     tion as in the case of ML-NMR10,13 remains a high prior-
+    The SEM assumption is questionable even when ther-         ity. It should also be emphasized that despite
+apies of the same class are concerned. For example,            demonstrating the method on binary outcomes, it is just
+inconsistency in RTE estimates has been demonstrated           as applicable to other types of contrasts that follow an
+both by the results of subgroup analysis in immuno-            asymptotically normal distribution, such as numeric con-
+oncology therapies and by subgroup analyses of different       trasts, log-relative rates from count data, and log-hazard
+SGLT2 inhibitors (dapagliflozin and empagliflozin) in          ratios from Cox models.
+heart failure.24–29 One noteworthy observation estab-
+lished by the analyses in this paper was the excessively
+biased estimates resulting from SEM-based models, such         6 | CONCLUSIONS
+as ML-NMR, relative to standard AgD NMA, when the
+data is generated by a non-SEM mechanism. However,             NMI is a simple, accurate and robust option for overcom-
+caution should be used when adjusting for EMs, as the          ing study imbalance in an NMA, provided that its data
+phase III OAK study25 has shown. In that study, the ate-       requirements are met. Its benefits are particularly consid-
+zolizumab treatment effect in males differed considerably      erable when the underlying data model does not follow
+to that in females in the smaller, primary ITT population,     the SEM assumption. Software: the simulation study in
+while the two were almost identical in the larger, second-     this paper was carried out using R software version
+ary ITT population. This shows that smaller trials are         4.0.532 as well as WinBUGS software version 1.4.3.33
+more prone to suggest false EMs, whose inclusion might
+result in greater estimation errors.                           AUTHOR CONTRIBUTIONS
+    With limited publicly available IPD RCTs, it is not        Conceptualisation: Ofir Harari and Bart Heeg. Methodol-
+uncommon for researchers to conduct NMAs on AgD                ogy: Ofir Harari and Mohsen Soltanifar. Software: Ofir
+only. NMI only requires IPD to estimate the Pearson cor-       Harari, Mohsen Soltanifar, and Caitlin Daly. Validation:
+relation between the effect modifiers; an external esti-       Joseph C. Cappelleri, Mario Ouwens, and Bart Heeg. For-
+mate may be used instead. However, this quantity must          mal analysis: Ofir Harari, Mohsen Soltanifar, Andre Ver-
+lie within a known interval (Appendix C). This allows          hoek, and Bart Heeg. Investigation: Bart Heeg. Resources:
+investigators to conduct NMI using AgD exclusively, with       Ofir Harari and Bart Heeg. Data curation: Ofir Harari.
+an accompanying sensitivity analysis, by means of plug-        Writing—original draft preparation: Ofir Harari, Mohsen
+ging in a range of plausible correlation coefficients and      Soltanifar, Andre Verhoek Bart Heeg. Writing—review
+observing the impact of misspecification of this parame-       and editing: Ofir Harari, Mohsen Soltanifar, Andre Ver-
+ter on the resultant NMA.                                      hoek, Bart Heeg, and Caitlin Daly. Visualization: Ofir
+    When no external estimate exists, accurate BLUP esti-      Harari, Mohsen Soltanifar, Andre Verhoek, Bart Heeg.
+mation becomes a key element of the method—one in              Supervision: Bart Heeg. Project administration: Bart Heeg.
+which the size of the IPD trial could play a role. This        Funding acquisition: Bart Heeg. All authors have read
+method of enrichment was chosen due to its simplicity,         and agreed to the published version of the manuscript.
+and other, more accurate imputation methods may be
+researched. However, our simulations suggest that the          ACKNOWLEDGMENT
+performance of NMI was robust to inaccuracies related to       The authors are grateful to journal reviewers for offering
+the estimation of these correlations.                          constructive comments and suggestions on the first draft
+    In this paper, the basic assumption was that all stud-     of the manuscript.
+ies in our network were randomized control trials
+(RCTs). However, recent advances in evidence synthesis         F U N D I N G IN F O R M A T I O N
+support the inclusion of real-world data (RWD) in ana-         Ofir Harari, Mohsen Soltanifar, Andre Verhoek,
+lyses alongside trial data.30 One such approach is the         Caitlin Daly, and Bart Heeg's work was supported by
+power prior model,31 in which a damping weight,                Cytel Inc.
+                                                                                                                                                   17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                               225
+
+
+
+CONFLICT OF INTEREST                                                     12. Welton NJ, Phillippo D, Owen R, et al. CHTE2020 sources and
+The authors declare no potential conflict of interests.                      synthesis of evidence: update to evidence synthesis methods.
+                                                                             Tech Rep. 2020.
+                                                                         13. Phillippo DM, Dias S, Ades AE, Welton NJ. Assessing the perfor-
+DATA AVAILABILITY STATEMENT
+                                                                             mance of population adjustment methods for anchored indirect
+The data that support the findings of this study are avail-                  comparisons: a simulation study. Stat Med. 2020;39(30):4885-4911.
+able from the corresponding author upon reasonable                       14. Phillippo DM, Dias S, Ades AE, Welton NJ. Target estimands
+request.                                                                     for efficient decision making: response to comments on A        ^
+                                                                             assessing the performance of population adjustment methods
+                                                                             for anchored indirect comparisons: a simulation study. Stat
+ORCID                                                                        Med. 2021;40(11):2759-2763.
+Ofir Harari https://orcid.org/0000-0002-2901-0558                        15. Remiro-Az  ocar A, Heath A, Baio G. Conflating marginal and condi-
+Mohsen Soltanifar https://orcid.org/0000-0002-5989-                          tional treatment effects: comments on A^ “assessing the performance
+0082                                                                         of population adjustment methods for anchored indirect compari-
+Caitlin Daly https://orcid.org/0000-0002-8272-797X                                                      ^ Stat Med. 2021;40(11):2753-2758.
+                                                                             sons: a simulation study A”.
+                                                                         16. Cooper NJ, Sutton AJ, Morris D, Ades AE, Welton NJ. Addres-
+                                                                             sing between-study heterogeneity and inconsistency in mixed
+R EF E RE N C E S
+                                                                             treatment comparisons: application to stroke prevention treat-
+ 1. Miettinen     O.     Confounding      and     effect-modification.       ments in individuals with non-rheumatic atrial fibrillation. Stat
+    Am J Epidemiol. 1995;141(12):1113-1116.                                  Med. 2009;28(14):1861-1881.
+ 2. Dias AE, Welton NJ, Jansen JP, Sutton AJ. Network Meta?              17. Jansen JP. Network meta-analysis of individual and aggregate
+    Analysis for Decision Making. John Wiley & Sons Ltd; 2018.               level data. Res Synth Methods. 2012;3(2):177-190.
+ 3. Dias S, Welton NJ, Sutton AJ, Ades AE. NICE decision support         18. Soltanifar M, Knight K, Dupuis A, Schachar R, Escobar M. A time
+    unit technical support documents. In: NICE DSU Technical                 series-based point estimation of stop signal reaction times: more
+    Support Document 2: A Generalised Linear Modelling Frame-                evidence on the role of reactive inhibition-proactive inhibition
+    work for Pairwise and Network Meta-Analysis of Randomised                interplay on the SSRT estimations. Brain Sci. 2020;10(9):598.
+    Controlled Trials. Tech. Rep., National Institute for Health and     19. Henderson CR. Best linear unbiased estimation and prediction
+    Clinical Excellence; 2014.                                               under a selection model. Biometrics. 1975;31(2):423-447.
+ 4. Hoaglin DC, Hawkins N, Jansen JP, et al. Conducting indirect-        20. Liu Y, Xia C. Fundamental equations of BLUE and BLUP in
+    treatment-comparison and network-meta-analysis studies: report           the multivariate linear model with applications. Commun Stat
+    of the ISPOR task force on indirect treatment comparisons good           Theory Methods. 2013;42(3):398-412.
+    research practices: part 2. Value Health. 2011;14(4):429-437.        21. James M. The generalised inverse. Math Gazette. 1978;62(420):
+ 5. Jansen JP, Fleurence R, Devine B, et al. Interpreting indirect           109-114.
+    treatment comparisons and network meta-analysis for health-          22. Shafarevich IR, Remizov AO. Linear Algebra and Geometry. 1st
+    care decision making: report of the ISPOR task force on indi-            ed. Springer; 2013.
+    rect treatment comparisons good research practices: part 1.          23. Phillippo DM. Multinma: Network Meta-Analysis of Individual
+    Value Health. 2011;14(4):417-428.                                        and Aggregate Data in Stand; 2021. Accessed September 6,
+ 6. Kovic B, Zoratti M, Michalopoulos S, Silvestre C, Thorlund K,            2021. https://dmphillippo.github.io/multinma/reference/multinma-
+    Thabane L. Deficiencies in addressing effect modification in             package.html
+    network meta-analyses: a meta-epidemiological survey. J Clin         24. Borghaei H, Gettinger S, Vokes EE, et al. Five-year outcomes
+    Epidemiol. 2017;88:47-56.                                                from the randomized, phase III trials CheckMate 017 and 057:
+ 7. Dias S, Sutton AJ, Welton NJ, Ades AE. NICE decision support             Nivolumab versus docetaxel in previously treated non-small-
+    unit technical support documents. In: NICE DSU Technical                 cell lung cancer. J Clin Oncol. 2021;39(7):723-733.
+    Support Document 3: Heterogeneity: Subgroups, Meta-Regres-           25. Fehrenbacher L, Pawel VJ, Park K, et al. Updated efficacy anal-
+    sion, Bias and Bias-Adjustment. Tech. Rep., National Institute           ysis including secondary population results for OAK: a ran-
+    for Health and Clinical Excellence; 2011.                                domized phase III study of atezolizumab versus docetaxel in
+ 8. Ishak KJ, Proskorovsky I, Benedict A. Simulation and                     patients with previously treated advanced non-small cell lung
+    matching-based approaches for indirect comparison of treat-              cancer. J Thorac Oncol. 2018;13(8):1156-1170.
+    ments. Pharmacoeconomics. 2015;33(6):537-549.                        26. McMurray JJV, Solomon SD, Inzucchi SE, et al. Dapagliflozin
+ 9. Phillippo DM, Ades AE, Dias S, Palmer S, Abrams KR,                      in patients with heart failure and reduced ejection fraction. N
+    Welton N. NICE decision support unit technical support docu-             Engl J Med. 2019;381(21):1995-2008.
+    ments. In: NICE DSU Technical Support Document 18: Methods           27. Motzer RJ, Penkov K, Haanen J, et al. Avelumab plus Axitinib
+    for Population-Adjusted Indirect Comparisons in Submission to            versus Sunitinib for advanced renal-cell carcinoma. N Engl J
+    NICE. Tech. Rep., NICE Decision Support Unit; 2016.                      Med. 2019;380(12):1103-1115.
+10. Phillippo DM, Dias S, Ades AE, et al. Multilevel network meta-       28. Packer M, Anker SD, Butler J, et al. Cardiovascular and renal
+    regression for population-adjusted treatment comparisons. J R            outcomes with Empagliflozin in heart failure. N Engl J Med.
+    Stat Soc Ser A Stat Soc. 2020;183(3):1189-1210.                          2020;383(15):1413-1424.
+11. Signorovitch JE, Sikirica V, Erder MH, et al. Matching-adjusted      29. Rini BI, Plimack ER, Stus V, et al. Pembrolizumab plus Axiti-
+    indirect comparisons: a new tool for timely comparative effec-           nib versus Sunitinib for advanced renal-cell carcinoma. N Engl
+    tiveness research. Value Health. 2012;15(6):940-947.                     J Med. 2019;380(12):1116-1127.
+                                                                                                                                                                    17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+226                                                                                                                                                 HARARI ET AL.
+
+
+
+30. Jenkins DA, Hussein MR, Dequen-O'Byrne P, Abrams KR,                                focus is on a single study. The treatment effect
+    Bujkiewicz S. Methods for the inclusion of real-world evidence in                   estimated at ðx 1 , …, x m Þ is given by
+    network meta-analysis. BMC Med Res Methodol. 2021;21(1):207.
+31. Ibrahim JG, Chen MH. Power prior distributions for regression                                                                       
+                                                                                          b ðx 1 , …, x m Þ ¼ g b
+                                                                                          Δ                      β, x 1 , …, x m , T ¼ 1
+    models. Stat Sci. 2000;15(1):46-60.
+                                                                                                                                          
+32. Team TRC. R: A Language and Environment for Statistical
+                                                                                                              g b  β, x 1 , …, x m , T ¼ 0
+    Computing. Team TRC; 2021.
+33. Lunn DJ, Thomas A, Best N, Spiegelhalter DJ. WinBUGS—a
+                                                                                                              Xm
+                                                                                                            ¼     b
+                                                                                                                  βiðmþ1Þ x i ,                             ðA2Þ
+    Bayesian modelling framework: concepts, structure, and exten-                                                   i¼0
+    sibility. Stat Comput. 2000;10:325-337.
+
+
+S UP PO RT ING IN FOR MAT ION                                                           where again, b
+                                                                                                     βiðmþ1Þ ,i ¼ 0,1,2,…,m are the ML
+Additional supporting information can be found online                                   estimates of the corresponding βi(m + 1). The
+in the Supporting Information section at the end of this                                variance of the treatment effect estimator
+article.                                                                                is then
+                                                                                                               h                   i
+                                                                                     σ 2Δ ðx 1 , …, x m Þ ¼ Var Δb ðx 1 , …, x m Þ
+      How to cite this article: Harari O, Soltanifar M,                                                     Xm               X
+      Cappelleri JC, et al. Network meta-interpolation:                                                   ¼         σ ii þ 2
+                                                                                                               x 2i b                          σ i1 i2 ,
+                                                                                                                                     x i1 x i2 b            ðA3Þ
+                                                                                                              i¼0            0 ≤ i1 < i2 ≤ m
+      Effect modification adjustment in network meta-
+      analysis using subgroup analyses. Res Syn Meth.                                                                                
+      2023;14(2):211‐233. doi:10.1002/jrsm.1608                                         where σ i1 i2 ¼ Cov b    βi1 ðmþ1Þ , b
+                                                                                                                             βi2 ðmþ1Þ , 0 ≤ i1,
+                                                                                        i2 ≤ m and x 0 ¼ 1. From Equations (A2) and
+                                                                                        (A3), we proceed to estimate the treatment
+                                                                                        effectand derive    a standard error at an arbi-
+                                                                                        trary x 1 , …, x m :
+A P P EN D I X A
+                                                                                      Step 1: For
+A.1 | A extending network meta interpolation
+                                                                                                                                                        T
+(NMI) to any number of effect modifiers                                            x0 ¼ ½1, 1, …, 1Tð2mþ1Þ1 ,xj ¼ x 1j , x 2j , …, x ð2mþ1Þj ð2mþ1Þ1
+Preliminaries: Hereafter, we provide the details for Steps
+1–3 of network meta interpolation (NMI) in Section 3.2                            and x 1j ¼ x j ,j ¼ 1,…,m, with values either in f0, 1g or
+for an arbitrary number m ≥ 1 of binary effect modifiers.                         missing, we use the best linear unbiased predictor19,20
+    The basic assumption is that for each trial in our net-                       (BLUP) to impute missing values. Specifically, to impute
+work, we have 2 m + 1 (TE, SE) pairs reported for the                             a missing value in the xj vector based on an observed
+2 m levels of the effect modifiers: one pair for Xi = 0,                          x i  f0, 1g value, we calculate
+another for Xi = 1, i = 1, …, m, and one for the full trial.
+                                                                                                                             
+We also assume that the outcome model follows the gen-                                 x j ðx i Þ ¼ b
+                                                                                                     ρxi xj b   σ xj x i  x j þ x j , 1 ≤ i < j ≤ m:
+                                                                                                            σxi b                                           ðA4Þ
+eralized linear model framework, that is,
+                                                                                     The correlation coefficients are estimated from the
+                                     X
+                                     m þ1               X
+                                                        m                         IPD, and the variances are given by
+gðβ;X 0 , X 1 , …, X m , X mþ1 Þ ¼          β0i X i þ         βiðmþ1Þ X i X mþ1
+                                     i¼0                i¼1                                                                
+                                                                                                                  xk 1  xj
+                                                                         ðA1Þ                          σ 2x k ¼
+                                                                                                       b                      ,k  fi, jg,
+                                                                                                                      nk
+where g() is some link function; X0 = 1, Xm+1 = T is the
+binary treatment variable, and ðX 1 , …, X m Þ is the prog-                       where nk is the number of patients in the kth trial. This
+nostic m-dimensional vector with                                                  yields an enriched data matrix
+                                                                                                      2                  3
+           ðx 1 , …, x m Þ ≔ ðPðX 1 ¼ 1Þ, …, PðX m ¼ 1ÞÞ:                                              j j   j
+                                                                                                    6                    7
+                                                                                               x ¼ 4 x0 x1   xmþ1 5
+        Remark A.1. Equation (A1) is reformulation                                                        j       j      j      ð2mþ1Þðmþ1Þ
+        of Equation (4) in Section 2.2 with g() being
+        the identity link, μ = β00 and d1k = β0, m + 1.
+        We suppress the trial index j here since the                                  See Table A1.
+                                                                                                                                                                                     17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                                                              227
+
+
+
+T A B L E A 1 The output of Step 1 of
+                                                       Study      Data matrix        Subgroup         x0       x1                    xp       TE           SE
+NMI, where each study results in a
+complete data matrix x                                1             x              1                1        x1                    xp       c 11
+                                                                                                                                                 TE           c 11
+                                                                                                                                                              SE
+                                                       ..         ..
+                                                        .          .                 2                1        1                     BLUP      c 21
+                                                                                                                                                 TE            c 21
+                                                                                                                                                              SE
+                                                        ..         ..                ..               ..       ..             ..        ..       ..           ..
+                                                         .          .                 .                .        .              .         .        .            .
+                                                         ..         ..
+                                                          .          .                2m+1             1       BLUP                   1        c 2mþ11
+                                                                                                                                                 TE            c 2mþ1,1
+                                                                                                                                                              SE
+                                                       ..         ..                 ..               ..       ..             ..        ..       ..           ..
+                                                        .          .                  .                .        .              .         .        .            .
+                                                         K           x              1                1        x1                    xp       c 1K
+                                                                                                                                                 TE           c 1K
+                                                                                                                                                              SE
+                                                       ..         ..
+                                                        .          .                 2                1        BLUP                  1        TEc 2K       SEc 2K
+                                                        ..         ..                ..               ..       ..             ..        ..       ...          ...
+                                                         .          .                 .                .        .              .         .
+                                                         ..         ..
+                                                          .          .               2m+1             1        1                     BLUP     c 2mþ1K
+                                                                                                                                                 TE           c 2mþ1,K
+                                                                                                                                                              SE
+
+
+
+    Step 2: For                                                                      and
+                      2              3                                                                          h 2             iT
+                       j j  j                                                                                        c2
+                                                                                                                 c , …, SE
+                     6               7                                                                     b2Δ ¼ SE
+                                                                                                           σ        1      2mþ1                           ,
+                M1 ¼ 4 1 x1  xm 5                                                                                                         ð2mþ1Þ1
+
+                          j   j    j       ð2mþ1Þðmþ1Þ
+                                                                                     we solve the underdetermined system
+
+and                                                                                                                         M2 σ b2Δ
+                                                                                                                               b¼σ                                     ðA7Þ
+                    h                 iT
+                 b ¼ TE
+                 Δ    c 1 , …, TE
+                               c 2mþ1                         ,
+                                                  ð2mþ1Þ1                           by choosing the using unique minimum Euclidean norm
+                                                                                     solution21,22 (UMENS)
+we may derive
+                                                                                           h                                                                  iT
+                                         T                                         σ¼ b
+                                                                                     b
+                                                                                     b        b
+                                                                                        σ00 , σ
+                                                                                        b              b
+                                                                                              b11 , …, σ     b
+                                                                                                       bmm , σ        b
+                                                                                                             b01 , …, σ     b
+                                                                                                                      b0m , σ        b
+                                                                                                                            b12 , …, σ
+                                                                                                                                     bðm1Þm m2 þ3mþ2                            ,
+                                                                                                                                                                           1
+                 b
+                 b   b
+                     b            b
+                                  b                                                                                                                                    2
+                 β ¼ β0ðmþ1Þ , …, βmðmþ1Þ
+                                                    ðmþ1Þ1
+                                                                                     given by
+by solving the overdetermined system
+                                                                                                                b             1 2
+                                                                                                                σ
+                                                                                                                b ¼ MT2 M2 MT2    σ
+                                                                                                                                  bΔ :                                 ðA8Þ
+                               M1 b   b
+                                  β ¼ Δ,                                    ðA5Þ
+
+using linear least-squares, namely,                                                      Step 3: Plug the solutions (A6) and (A8) into
+                                                                                     Equations (A2) and (A3), respectively,
+                                                                                                                           for any choice
+                      b        1                                                                                   inp
+                                                                                     of input effect modifiers x ¼ x 1 , …, x inp
+                                                                                                                inp
+                                                                                                                                   to obtain
+                      b              b
+                      β ¼ MT1 M1 MT1 Δ:                                     ðA6Þ                                              m
+                                                                                     interpolated TE and SE estimates at the desired
+                                                                                     EM configuration xinp . Repeating the process for all
+    Similarly, for                                                                   K studies in our network will yield K different
+
+
+
+
+                                      2                                                                             3
+                                          j   j            j   j           j    j                 j
+                                   6                                                          7
+                              M2 ¼ 4 1 x1   xm 2 2x1   2x1 2x1 x2   2xm1 xm 5
+                                          2
+
+
+
+                                          j   j            j   j           j    j                 j            ð2mþ1Þðm þ3mþ2
+                                                                                                                                    2
+                                                                                                                                        Þ
+                                                                                                                                   2
+                                                                                                                                                                                17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+228                                                                                                                                                          HARARI ET AL.
+
+
+
+TABLE A2                Spelling out the different elements of the NMI method for the special cases m = 1, 2
+
+    m                                              1                                                     2
+    b ðx 1 , …, x m Þ
+    Δ                                              β02 þ b
+                                                   b     β12 x 1                                         β03 þ b
+                                                                                                         b     β13 x 1 þ b
+                                                                                                                         β23 x 2
+    σ ðx 1 , …, x m Þ
+      2
+                                                   σ 00 þ x 21 b
+                                                   b           σ 11 þ 2x 1 b
+                                                                           σ 01                          σ 00 þ x 21 b
+                                                                                                         b           σ 11 þ x 22 b
+                                                                                                                                 σ 22 þ 2x 1 b
+                                                                                                                                             σ 01 þ 2x 2 b
+                                                                                                                                                         σ 02 þ 2x 1 x 2 b
+                                                                                                                                                                         σ 12
+     b
+     Δ
+                                                   0           1                                         0                1
+    M1                                                  1 x1                                                1 x1 x2
+                                                   B     C                                               B                C
+                                                   @1 1 A                                                B1 1 a C
+                                                                                                         B                C
+                                                     1 0                                                 B1 0 b C
+                                                                                                         B                C
+                                                                                                         B                C
+                                                                                                         @1 c 1 A
+                                                                                                            1 d 0
+                                                   0          1                                          0                          1
+    b 2mþ11
+    Δ                                               Δb ðx 1 Þ                                                  b ðx 1 , x 2 Þ
+                                                                                                               Δ
+                                                   Bb         C                                          B                          C
+                                                   @ Δð1Þ A                                              B      Δb ð1, aÞ           C
+                                                                                                         B                          C
+                                                        b ð0Þ                                            B       b                  C
+                                                        Δ                                                B      Δð0, bÞ             C
+                                                                                                         B                          C
+                                                                                                         B ½:35emΔ     b ðc,    1Þ C
+                                                                                                         @                          A
+                                                                                                            ½:35emΔ    b ðd, 0Þ
+                                                   0                   1                                 0                                        1
+    M2                                                  1 x 21 2x 1                                         1 x 21 x 22 2x 1 2x 2 2x 1 x 2
+                                                   B                 C                                   B                                        C
+                                                   @1 1            2 A                                   B 1 1 a2 2 2a 2a C
+                                                                                                         B                                        C
+                                                     1 0           0                                     B 1 0 b 0 2b   2
+                                                                                                                                            0 C
+                                                                                                         B                                        C
+                                                                                                         B                                        C
+                                                                                                         @ 1 c2 1 2c 2                     2c A
+                                                                                                          1 d2 0 2d                0       0
+                                                   0 2       1                                           0 2             1
+    σ2                                              σ ðx 1 Þ                                              σ ðx 1 , x 2 Þ
+     b
+     Δð2mþ1Þ1                                     B bΔ      C                                             b
+                                                                                                           Δ
+                                                   B σ 2 ð1Þ C                                           B 2             C
+                                                   B b       C                                           B σ ð1, aÞ C
+                                                   @ Δ                                                   B b             C
+                                                             A                                           B Δ             C
+                                                     σ 2 ð0Þ                                             B σ 2 ð0, bÞ C
+                                                      bΔ
+                                                                                                         B b             C
+                                                                                                         B Δ             C
+                                                                                                         B σ 2 ðc, 1Þ C
+                                                                                                         B b             C
+                                                                                                         @ Δ             A
+                                                                                                           σ ðd, 0Þ
+                                                                                                             2
+                                                                                                             b
+                                                                                                             Δ
+
+Note: The quantities a, b, c, and d refer to BLUP imputed values.
+
+
+               
+           c xinp pairs that will serve as input for the
+  c xinp , SE
+ TE                                                                                       APPENDIX B
+eventual standard AgD NMA. Table A2 provides the
+expressions for the special cases m = 1, 2. Note that in                                  B.1 | Methods performance at the parameter
+the case of a single effect modifier, (A2) has a unique                                   level
+solution and requires no estimate of the correlations                                     Table B1 contains the full simulation results for larger
+between EMs.                                                                              network in terms of RMSE and 95% CrI coverage for
+
+
+
+
+TABLE B1                Summary of the parameter level performance of the different methods at the parameter level for all scenarios (larger
+network)
+
+                                                RMSE                                                     Coverage
+
+    Scenario                  Parameter         NMR             NMA               ML-NMR        NMI      NMR            NMA                ML-NMR                  NMI
+    Base(a)                   dAB               0.237           0.417             0.199         0.137    94.8%            59.0%              97.7%                  99.7%
+    Fixed x                   dAC               0.258           0.127             0.178         0.140    75.4%            99.1%              98.5%                  98.8%
+    Identical ρ               dAD               0.448           0.254             0.303         0.270    90.8%            99.2%              98.2%                  97.7%
+    SEM                       dBC               0.353           0.385             0.208         0.169    94.5%            89.1%              99.3%                  99.8%
+                              dBD               0.564           0.607             0.326         0.285    95.0%            84.7%              99.3%                  98.8%
+                              dCD               0.321           0.316             0.282         0.272    96.5%            98.5%              98.9%                  99.4%
+                                                                                                            17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                         229
+
+
+
+TABLE B1        (Continued)
+
+                                  RMSE                             Coverage
+
+  Scenario            Parameter   NMR     NMA     ML-NMR   NMI     NMR        NMA      ML-NMR   NMI
+  Base(b)             dAB         0.246   0.154   0.376    0.116   91.7%       98.1%    89.1%    99.7%
+  Fixed x             dAC         0.216   0.128   0.348    0.148   84.6%       99.1%    92.2%    98.8%
+  Identical ρ         dAD         0.676   0.325   0.248    0.255   64.3%       96.4%   100.0%    99.0%
+  Non-SEM             dBC         0.418   0.175   0.697    0.197   88.2%       99.4%    77.2%    98.9%
+                      dBD         0.862   0.275   0.449    0.270   76.8%       98.8%    98.4%    99.2%
+                      dCD         0.526   0.313   0.430    0.316   75.9%       98.2%    98.8%    98.3%
+  1(a)                dAB         0.245   0.414   0.203    0.139   94.2%       55.5%    97.6%    99.2%
+  Fixed x             dAC         0.238   0.122   0.184    0.143   79.1%       99.8%    98.7%    98.9%
+  Non-identical ρ     dAD         0.442   0.273   0.298    0.266   90.2%       98.5%    98.9%    97.4%
+  SEM                 dBC         0.346   0.399   0.207    0.177   94.1%       86.5%    99.6%    99.3%
+                      dBD         0.574   0.625   0.329    0.273   93.4%       80.5%    98.6%    98.7%
+                      dCD         0.336   0.320   0.284    0.276   95.7%       98.5%    99.7%    98.5%
+  1(b)                dAB         0.256   0.148   0.361    0.116   91.5%       98.8%    89.9%   100.0%
+  Fixed x             dAC         0.208   0.123   0.340    0.151   87.8%       99.4%    92.2%    98.4%
+  Non-identical ρ     dAD         0.688   0.326   0.247    0.252   66.7%       98.0%   100.0%    98.9%
+  Non-SEM             dBC         0.422   0.176   0.671    0.201   88.0%       99.5%    76.8%    99.1%
+                      dBD         0.889   0.282   0.452    0.273   75.9%       99.1%    99.7%    99.3%
+                      dCD         0.551   0.329   0.405    0.319   72.6%       98.8%    99.2%    98.3%
+  2(a)                dAB         0.179   0.215   0.190    0.137   86.4%       96.9%    99.1%    99.1%
+  Variable x          dAC         0.228   0.261   0.213    0.151   72.4%       94.0%    98.0%    98.3%
+  Identical ρ         dAD         0.359   0.468   0.341    0.253   82.7%       96.6%    98.5%    99.3%
+  SEM                 dBC         0.211   0.311   0.192    0.175   94.3%       96.2%    99.8%    99.6%
+                      dBD         0.320   0.467   0.316    0.262   92.9%       97.0%    99.2%    99.5%
+                      dCD         0.300   0.429   0.295    0.257   96.3%       98.3%    99.4%    99.6%
+  2(b)                dAB         0.134   0.116   0.230    0.120   96.2%       99.8%    99.0%   100.0%
+  Variable x          dAC         0.234   0.260   0.302    0.156   71.4%       90.8%    97.6%    98.7%
+  Identical ρ         dAD         0.531   0.352   0.255    0.245   61.3%       96.2%    99.9%    99.2%
+  Non-SEM             dBC         0.285   0.311   0.465    0.204   83.5%       93.9%    96.4%    99.3%
+                      dBD         0.554   0.349   0.348    0.263   68.9%       98.2%    99.9%    99.4%
+                      dCD         0.611   0.462   0.396    0.324   62.5%       94.1%    99.7%    98.7%
+  3(a)                dAB         0.178   0.211   0.159    0.141   87.9%       96.0%    98.6%    99.0%
+  Variable x          dAC         0.211   0.249   0.172    0.165   76.8%       95.4%    99.0%    98.4%
+  Non-identical ρ     dAD         0.349   0.443   0.299    0.262   82.8%       95.8%    98.6%    98.9%
+  SEM                 dBC         0.212   0.312   0.190    0.175   95.4%       95.6%    99.7%    99.6%
+                      dBD         0.319   0.438   0.294    0.255   94.2%       98.8%    99.3%    99.8%
+                      dCD         0.301   0.426   0.297    0.249   96.6%       97.9%    99.2%    99.8%
+  3(b)                dAB         0.132   0.117   0.242    0.112   96.7%      100.0%    98.6%    99.8%
+  Variable x          dAC         0.219   0.250   0.291    0.165   75.4%       92.4%    96.3%    97.4%
+  Non-identical ρ     dAD         0.511   0.331   0.249    0.234   66.3%       97.3%    99.9%    99.4%
+  Non-SEM             dBC         0.269   0.310   0.465    0.205   85.5%       95.5%    95.0%    98.9%
+                      dBD         0.553   0.339   0.335    0.254   70.8%       98.8%    99.7%    99.5%
+                      dCD         0.580   0.441   0.377    0.319   66.5%       95.6%    99.6%    98.3%
+                                                                                                                                               17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+230                                                                                                                           HARARI ET AL.
+
+
+
+TABLE B2        Summary of the parameter level performance of the different methods for all scenarios (small network)
+
+                                      RMSE                                               Coverage
+
+  Scenario          Parameter         NMR         NMA         ML-NMR          NMI        NMR         NMA         ML-NMR            NMI
+  1(a)              dAB               0.614       0.431       0.249           0.230      95.0%       55.8%       93.1%             92.3%
+  n/arm = 300       dAC               0.635       0.445       0.267           0.240      92.5%       54.9%       92.7%             92.1%
+  SEM               dAD               0.666       0.477       0.316           0.263      89.3%       55.4%       90.9%             88.5%
+                    dBC               1.022       0.681       0.359           0.317      99.5%       48.8%       93.0%             95.0%
+                    dBD               1.039       0.700       0.358           0.323      99.8%       47.2%       95.0%             94.0%
+                    dCD               1.025       0.682       0.364           0.323      99.9%       48.2%       94.8%             93.2%
+  1(b)              dAB               0.594       0.236       0.572           0.208      97.0%       87.9%       45.8%             95.0%
+  n/arm = 300       dAC               0.840       0.453       0.759           0.246      85.2%       55.8%       33.7%             93.4%
+  Non-SEM           dAD               0.323       0.392       0.242           0.236      95.7%       61.6%       94.4%             93.7%
+                    dBC               1.224       0.560       1.147           0.316      94.6%       62.2%       23.3%             95.2%
+                    dBD               0.706       0.403       0.631           0.313      99.6%       81.0%       64.3%             94.6%
+                    dCD               0.982       0.544       0.816           0.366      93.3%       65.4%       48.9%             90.8%
+  2(a)              dAB               0.859       0.483       0.445           0.361      95.5%       69.8%       92.5%             92.8%
+  n/arm = 150       dAC               0.865       0.485       0.470           0.404      95.3%       72.3%       91.1%             93.3%
+  SEM               dAD               0.886       0.522       0.612           0.465      93.8%       69.2%       86.9%             91.6%
+                    dBC               1.410       0.747       0.537           0.539      99.6%       69.2%       92.2%             95.1%
+                    dBD               1.399       0.754       0.608           0.580      99.8%       68.1%       91.1%             94.2%
+                    dCD               1.407       0.751       0.594           0.604      99.5%       67.4%       92.6%             93.7%
+  2(b)              dAB               0.820       0.296       0.632           0.316      97.2%       92.8%       62.9%             94.9%
+  n/arm = 150       dAC               1.046       0.487       0.828           0.408      91.2%       71.0%       47.8%             93.7%
+  Non-SEM           dAD               0.519       0.438       0.402           0.355      96.2%       76.6%       93.9%             93.3%
+                    dBC               1.560       0.617       1.218           0.506      96.7%       79.9%       42.1%             94.7%
+                    dBD               1.048       0.487       0.763           0.487      99.9%       89.0%       78.6%             94.1%
+                    dCD               1.313       0.597       0.954           0.541      96.5%       79.0%       67.4%             93.5%
+
+
+
+
+all eight sub-scenarios in Table 4. Similarly, Table B2                network for all four            sub-scenarios     in    Table       5
+presents the corresponding results for the smaller                     (Figures B1 and B2).
+                                                                                                                                                17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                             231
+
+
+
+
+F I G U R E B 1 Density plots of the posterior means of the relative treatment effect estimates for all methods, when the proportions of 1's
+in both EMs are held fixed between simulated datasets and the Pearson correlation between EMs is identical across all trials. (a) Datasets
+generated from a SEM model. (b) Datasets generated from a non-SEM model [Colour figure can be viewed at wileyonlinelibrary.com]
+                                                                                                                                                17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+232                                                                                                                             HARARI ET AL.
+
+
+
+
+F I G U R E B 2 Boxplots of the posterior means of the relative treatment effect estimates for all methods, when the proportions of 1's in
+both EMs are held fixed between simulated datasets and the Pearson correlation between EMs is identical across all trials. (a) Datasets
+generated from a SEM model. (b) Datasets generated from a non-SEM model [Colour figure can be viewed at wileyonlinelibrary.com]
+                                                                                                                                                         17592887, 2023, 2, Downloaded from https://onlinelibrary.wiley.com/doi/10.1002/jrsm.1608 by Readcube (Labtiva Inc.), Wiley Online Library on [07/08/2025]. See the Terms and Conditions (https://onlinelibrary.wiley.com/terms-and-conditions) on Wiley Online Library for rules of use; OA articles are governed by the applicable Creative Commons License
+HARARI ET AL.                                                                                                                                      233
+
+
+
+A P P EN D I X C                                                            must be satisfied. Additionally, for the second and third
+                                                                            equations to yield valid p10 and p01, respectively, we
+C.1 | Constraints on the correlation coefficient                            must pick
+between two binary random variables
+Let X1 and X2 be binary random variables such that                                                            p 1 ð1  p 2 Þ
+                                                                                          ρX 1 ,X 2 ≤ pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+PðX 1 ¼ 1Þ ¼ p1 , PðX 2 ¼ 1Þ ¼ p2 , and denote                                                         p1 ð1  p1 Þp2 ð1  p2 Þ
+
+                pij ¼ PðX 1 ¼ i, X 2 ¼ jÞ,i,j  f0, 1g:
+                                                                            and
+
+    The Pearson correlation between X1 and X2 is then                                                         p 2 ð1  p 1 Þ
+                                                                                         ρX 1 ,X 2 ≤ pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ :
+                                                                                                      p1 ð1  p1 Þp2 ð1  p2 Þ
+                               ½X 1 X 2   ½X 1 ½X 2 
+                 ρX 1 ,X 2 ¼                                :
+                                         σX 1 σX 2
+                                                                                Hence, a bivariate distribution with marginal binary
+    Note that the following equalities must hold,                           distributions only exists for:
+        8                       pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ                          p1 p2
+        >
+        > p11 ¼ p1 p2 þ ρX 1 X 2 p1 ð1  p1 Þp2 ð1  p2 Þ                              pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+        >
+        <p ¼ p  p                                                                      p1 ð1  p1 Þp2 ð1  p2 Þ
+            10     1     11
+        >                                                                               ≤ ρX 1 X 2
+        >
+        > p    ¼ p    p                                                                             8
+        : 01       2     11
+                                                                                                     <
+          p00 ¼ 1  p11  p10  p01 ,                                                                                 p 1 ð1  p 2 Þ
+                                                                                        ≤ min pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ ,
+                                                                                                     : p1 ð1  p1 Þp2 ð1  p2 Þ
+and thus, for any chosen ρX 1 ,X 2 we may draw bivariate                                                                              9
+                                                                                                                                    =
+                                             p00 p01                                                 p 2 ð1  p 1 Þ
+samples from the distribution given by                 : How-                                pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ :
+                                             p10 p11                                          p1 ð1  p1 Þp2 ð1  p2 Þ ;
+ever, for the first equation in (C9) to yield a valid p11, the
+inequality
+
+                                         p1 p2
+                 ρX 1 ,X 2 ≥ pﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+                              p1 ð1  p1 Þp2 ð1  p2 Þ
+
