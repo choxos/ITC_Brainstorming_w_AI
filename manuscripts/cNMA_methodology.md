@@ -38,3 +38,6 @@ Beliveau A, et al. (2017). Component network meta‑analysis. Research Synthesis
 Rücker G, Petropoulou M, Schwarzer G (2019). Network meta‑analysis of multicomponent interventions. Statistics in Medicine.\
 Efthimiou O, et al. (2022). Methods for cNMA with multiple outcomes. Research Synthesis Methods.
 
+## Acknowledgments
+We acknowledge the use of large language models as co‑development tools in ideation, drafting, and code generation: Claude Sonnet 4, Grok 4, ChatGPT‑3o, and ChatGPT‑5. Human authors curated assumptions, validated models, designed simulations, and ensured scientific correctness.
+

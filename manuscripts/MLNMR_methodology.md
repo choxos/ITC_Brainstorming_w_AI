@@ -35,3 +35,6 @@ Phillippo DM (2019). Calibration of Treatment Effects in Network Meta‑Analysis
 Jansen JP (2012). Network meta‑analysis of individual and aggregate level data. Research Synthesis Methods.\
 Dias S, et al. (2013). Medical Decision Making.
 
+## Acknowledgments
+We acknowledge the contribution of large language models (Claude Sonnet 4, Grok 4, ChatGPT‑3o, ChatGPT‑5) in developing drafts, Stan/R code, and design alternatives. Human investigators verified scientific content and reproducibility.
+

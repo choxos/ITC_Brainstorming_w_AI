@@ -90,3 +90,6 @@ The suite of Bayesian methods introduced here provides a coherent and practical 
 10. Rücker G, Petropoulou M, Schwarzer G (2019). Network meta‑analysis of multicomponent interventions. Statistics in Medicine, 38(4):552–563.
 11. Harari O, et al. (2023). Network meta‑interpolation: a framework for population adjustment without shared effect modifiers. Journal of the Royal Statistical Society, Series A (applied/accepted; include exact citation as per final version).
 
+## Acknowledgments
+We acknowledge the instrumental role of large language models—Claude Sonnet 4, Grok 4, ChatGPT‑3o, and ChatGPT‑5—in assisting with brainstorming, code generation (R/Stan), and drafting. All methodological decisions, validations, and simulations were conducted and overseen by the human authors.
+

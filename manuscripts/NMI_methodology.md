@@ -16,3 +16,6 @@ RB‑NMI incorporates mixture components for heavy tails and missing‑data mode
 ## References
 Harari O, et al. (2023). Network meta‑interpolation. JRSS or related venue (update final citation).
 
+## Acknowledgments
+Large language models—Claude Sonnet 4, Grok 4, ChatGPT‑3o, and ChatGPT‑5—assisted in concept refinement, drafting, and code iteration. Human authors ensured methodological rigor and validation.
+

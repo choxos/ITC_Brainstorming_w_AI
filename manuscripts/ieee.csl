@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="sort-only">
+  <info>
+    <title>IEEE</title>
+    <id>http://www.zotero.org/styles/ieee</id>
+  </info>
+  <macro name="author">
+    <names variable="author">
+      <name and="text" delimiter=", " initialize-with="."/>
+    </names>
+  </macro>
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout prefix="[" suffix="]" delimiter=","/>
+  </citation>
+  <bibliography et-al-min="6" et-al-use-first="1" second-field-align="flush">
+    <layout suffix=".">
+      <text variable="citation-number" prefix="[" suffix="] "/>
+      <text macro="author" suffix=", "/>
+      <text variable="title" suffix=", "/>
+      <text variable="container-title" suffix=", "/>
+      <date variable="issued">
+        <date-part name="year"/>
+      </date>
+    </layout>
+  </bibliography>
+</style>

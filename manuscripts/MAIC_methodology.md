@@ -11,3 +11,6 @@ Weights are parameterized on the log‑scale with priors that control dispersion
 Signorovitch JE, et al. (2010). Value in Health.\
 Phillippo DM, et al. (2018). Medical Decision Making.
 
+## Acknowledgments
+We used LLMs (Claude Sonnet 4, Grok 4, ChatGPT‑3o, ChatGPT‑5) during development; human authors retained responsibility for scientific choices, validation, and writing.
+

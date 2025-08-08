@@ -13,3 +13,6 @@ estimated with AgD constraints on arms A and C and IPD‑based prediction of \(\
 Ishak KJ, et al. (2015). PharmacoEconomics.\
 Phillippo DM (2019). PhD Thesis, University of Bristol.
 
+## Acknowledgments
+LLMs—Claude Sonnet 4, Grok 4, ChatGPT‑3o, and ChatGPT‑5—were involved in code drafting and documentation; human authors validated and refined the methodology and results.
+
